@@ -1,12 +1,17 @@
 package main;
 
-public interface Searcher<T> extends Iterable<T> {
+import base.Pair;
 
-    boolean contains(T element);
+public interface Searcher<T, E> extends Iterable<Pair<T, E>> {
 
-    void erase(T element);
+    boolean containsKey(Object key);
 
-    void push(T element);
+    E get(Object key);
+
+    void erase(T key);
+
+    void push(T key, E value);
 
     int size();
+
 }

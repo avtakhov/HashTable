@@ -1,26 +1,29 @@
 package main;
 
+import base.Pair;
+
+import java.io.PrintStream;
 import java.util.Comparator;
 import java.util.Random;
 
-public class HashTable<T> {
+public class HashTable<T, E> {
 
-    private void fillTable() {
-        for (int i = 0; i < table.length; i++) {
-            table[i] = /* change me */ new MyList<>();
-        }
-    }
-
-    private final Comparator<T> comparator;
+    private final Comparator<? super T> comparator;
+    private final int p = 1_000_000_000 + 7;
     private final int START_CAPACITY = 8;
-
-    private Searcher<T>[] table = (Searcher<T>[]) new Searcher[START_CAPACITY];
+    @SuppressWarnings("unchecked")
+    private Searcher<T, E>[] table = (Searcher<T, E>[]) new Searcher[START_CAPACITY];
     private int size = 0;
+    private long a = nextRandom();
+    private long b = nextRandom();
+
+    private Random random = new Random();
 
     public HashTable() {
         comparator = new Comparator<T>() {
             @Override
             public int compare(T t1, T t2) {
+                @SuppressWarnings("unchecked")
                 Comparable<T> x = (Comparable<T>) t1;
                 return x.compareTo(t2);
             }
@@ -28,54 +31,56 @@ public class HashTable<T> {
         fillTable();
     }
 
-    public HashTable(Comparator<T> comparator) {
+    public HashTable(Comparator<? super T> comparator) {
         this.comparator = comparator;
         fillTable();
     }
 
-    private Random random = new Random();
-    private long a = random.nextInt();
-    private long b = random.nextInt();
+    private void fillTable() {
+        for (int i = 0; i < table.length; i++) {
+            table[i] = /* change me */ new SplayTree<>();
+        }
+    }
 
-    private int getIndex(T element) {
-        int p = Integer.MAX_VALUE;
+    private int nextRandom() {
+        return Math.abs(random.nextInt()) % p;
+    }
+
+    private int getIndex(Object element) {
+
         return (int) (Math.abs(element.hashCode() * a + b) % p % table.length);
     }
 
-    public void push(T element) {
+    public void push(T element, E value) {
         rebuild();
-        table[getIndex(element)].push(element);
+        table[getIndex(element)].push(element, value);
         size++;
     }
 
-    public void erase(T element) {
-        table[getIndex(element)].erase(element);
+    public void erase(T key) {
+        table[getIndex(key)].erase(key);
         size--;
     }
 
-    public boolean contains(T element) {
-        return table[getIndex(element)].contains(element);
+    public boolean containsKey(Object key) {
+        // ((SplayTree<T, E>)table[getIndex(key)]).print(System.out);
+        return table[getIndex(key)].containsKey(key);
+    }
+
+    public E get(Object key) {
+        return table[getIndex(key)].get(key);
     }
 
     private void rebuild() {
         if (size() * 2 > table.length) {
-            a = random.nextInt() | 1;
-            b = random.nextInt();
-            Searcher<T>[] buffer = table;
-            table = (Searcher<T>[]) new Searcher[table.length * 2];
+            a = nextRandom() | 1;
+            b = nextRandom();
+            Searcher<T, E>[] buffer = table;
+            table = (Searcher<T, E>[]) new Searcher[table.length * 2];
             fillTable();
-            for (Searcher<T> ts : buffer) {
-                for (T element : ts) {
-                    table[getIndex(element)].push(element);
-                }
-            }
-            for (int i = 0; i < table.length; i++) {
-                if (table[i].size() >= 20) {
-                    SplayTree<T> tree = new SplayTree<>(comparator);
-                    for (T element : table[i]) {
-                        tree.push(element);
-                    }
-                    table[i] = tree;
+            for (Searcher<T, E> ts : buffer) {
+                for (Pair<T, E> element : ts) {
+                    table[getIndex(element.first)].push(element.first, element.second);
                 }
             }
         }
@@ -84,12 +89,12 @@ public class HashTable<T> {
     public int size() {
         return size;
     }
-/*
+
     public void print(PrintStream out) {
-        for (Searcher<T> ts : table) {
-           ((SplayTree) ts).print(out);
+        for (Searcher<T, E> ts : table) {
+            ((SplayTree) ts).print(out);
         }
         System.out.println("====================");
     }
- */
+
 }

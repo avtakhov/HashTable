@@ -1,25 +1,27 @@
+
 package main;
+
+import base.Pair;
 
 import java.io.PrintStream;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
-public class SplayTree<E> implements Searcher<E> {
+public class SplayTree<E, T> implements Searcher<E, T> {
 
     int size = 0;
 
     @Override
-    public Iterator<E> iterator() {
+    public Iterator<Pair<E, T>> iterator() {
         if (root == null) {
-            return new Iterator<E>() {
+            return new Iterator<Pair<E, T>>() {
                 @Override
                 public boolean hasNext() {
                     return false;
                 }
 
                 @Override
-                public E next() {
+                public Pair<E, T> next() {
                     return null;
                 }
             };
@@ -31,39 +33,30 @@ public class SplayTree<E> implements Searcher<E> {
         return new ProxyNode(v);
     }
 
-    class Node {
-        public E key;
-        public Node left;
-        public Node right;
-        public Node parent;
-
-        public Node(E key) {
-            this.key = key;
-            left = right = parent = null;
+    private Node find(Node node, Object key) {
+        if (node == null) {
+            return null;
         }
+        int c = comparator.compare((E) key, node.key);
+        if (c < 0 && node.left != null) {
+            return find(node.left, key);
+        } else if (c > 0 && node.right != null) {
+            return find(node.right, key);
+        }
+        return splay(node);
     }
 
-    public class ProxyNode implements Iterator<E> {
-        private Node node;
-
-        private ProxyNode(Node node) {
-            this.node = node;
+    @Override
+    public void push(E key, T value) {
+        if (root != null && comparator.compare((root = find(root, key)).key, key) == 0) {
+            return;
         }
-
-        @Override
-        public boolean hasNext() {
-            return node != null;
-        }
-
-        @Override
-        public E next() {
-            Pair<Node, Node> res = split(node.key);
-            E ans = node.key;
-            res.second = find(res.second, node.key);
-            node = res.second;
-            root = merge(res.first, res.second);
-            return ans;
-        }
+        size++;
+        Pair<Node, Node> res = split(key);
+        root = new Node(key, value);
+        root.left = res.first;
+        root.right = res.second;
+        updateParent(root);
     }
 
     private final Comparator<E> comparator;
@@ -139,17 +132,13 @@ public class SplayTree<E> implements Searcher<E> {
         return splay(node);
     }
 
-    private Node find(Node node, E key) {
-        if (node == null) {
-            return null;
+    @Override
+    public boolean containsKey(Object key) {
+        if (root == null) {
+            return false;
         }
-        int c = comparator.compare(key, node.key);
-        if (c < 0 && node.left != null) {
-            return find(node.left, key);
-        } else if (c > 0 && node.right != null) {
-            return find(node.right, key);
-        }
-        return splay(node);
+        root = find(root, key);
+        return comparator.compare((E) key, root.key) == 0;
     }
 
     private Pair<Node, Node> split(E key) {
@@ -185,16 +174,13 @@ public class SplayTree<E> implements Searcher<E> {
     }
 
     @Override
-    public void push(E key) {
-        if (root != null && comparator.compare((root = find(root, key)).key, key) == 0) {
-            return;
+    public T get(Object key) {
+        if (root == null) {
+            return null;
         }
-        size++;
-        Pair<Node, Node> res = split(key);
-        root = new Node(key);
-        root.left = res.first;
-        root.right = res.second;
-        updateParent(root);
+        root = find(root, key);
+
+        return root.value;
     }
 
     @Override
@@ -211,12 +197,41 @@ public class SplayTree<E> implements Searcher<E> {
         root = merge(root.left, root.right);
     }
 
-    public boolean contains(E key) {
-        if (root == null) {
-            return false;
+    class Node {
+        public E key;
+        public T value;
+        public Node left;
+        public Node right;
+        public Node parent;
+
+        public Node(E key, T value) {
+            this.key = key;
+            this.value = value;
+            left = right = parent = null;
         }
-        root = find(root, key);
-        return (comparator.compare(key, root.key) == 0);
+    }
+
+    public class ProxyNode implements Iterator<Pair<E, T>> {
+        private Node node;
+
+        private ProxyNode(Node node) {
+            this.node = node;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return node != null;
+        }
+
+        @Override
+        public Pair<E, T> next() {
+            Pair<Node, Node> res = split(node.key);
+            Pair<E, T> ans = new Pair(node.key, node.value);
+            res.second = find(res.second, node.key);
+            node = res.second;
+            root = merge(res.first, res.second);
+            return ans;
+        }
     }
 
     private void print(Node node, PrintStream out) {
@@ -233,16 +248,5 @@ public class SplayTree<E> implements Searcher<E> {
         print(root, out);
         out.println("]");
     }
-
-    private class Pair<E, T> {
-        public E first;
-        public T second;
-
-        Pair(E first, T second) {
-            this.first = first;
-            this.second = second;
-        }
-    }
-
 
 }

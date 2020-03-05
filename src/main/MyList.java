@@ -1,27 +1,33 @@
 package main;
 
-import java.util.ArrayList;
+import base.Pair;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class MyList<E> implements Searcher<E> {
+public class MyList<T, E> implements Searcher<T, E> {
 
-    List<E> list = new LinkedList<>();
+    List<Pair<T, E>> list = new LinkedList<Pair<T, E>>();
 
     @Override
-    public boolean contains(E element) {
-        return list.contains(element);
+    public boolean containsKey(Object key) {
+        return false;
     }
 
     @Override
-    public void erase(E element) {
-        list.remove(element);
+    public E get(Object key) {
+        return null;
     }
 
     @Override
-    public void push(E element) {
-        list.add(element);
+    public void erase(T key) {
+
+    }
+
+    @Override
+    public void push(T key, E value) {
+
     }
 
     @Override
@@ -30,7 +36,7 @@ public class MyList<E> implements Searcher<E> {
     }
 
     @Override
-    public Iterator<E> iterator() {
+    public Iterator<Pair<T, E>> iterator() {
         return list.iterator();
     }
 }
